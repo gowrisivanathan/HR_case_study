@@ -1,0 +1,276 @@
+# IMPORT LIBRARIES AND DATASETS
+# Pandas offers data structures and operations for manipulating numerical tables and time series
+# NumPy adds support for large, multi-dimensional arrays and matrices. It also comes with a large set of high-level mathematical functions to operate on these arrays.
+# Seaborn is used for data visualization based on matplotlib. It provides a high-level interface for informative statistical graphics.
+# Matplotlib provides an object-oriented API for embedding plots into applications. 
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# If you are using Google Colab, you will need to mount your drive using the following commands:
+# For more information regarding mounting, check this out: https://stackoverflow.com/questions/46986398/import-data-into-google-colaboratory
+from google.colab import drive
+drive.mount('/content/drive')
+
+# You have to include the full link to the csv file containing your dataset
+employee_df = pd.read_csv('/content/drive/My Drive/Colab Notebooks/Data Science for Business/1. Human Resources Data/Human_Resources.csv')
+
+# View the dataframe
+employee_df
+
+# View the first 5 employees of the dataset
+employee_df.head(5)
+
+# View the last 5 employees of the dataset
+employee_df.tail(5)
+
+employee_df.info()
+
+# 35 features in total and each contains 1470 data points
+employee_df.describe()
+
+
+# VISUALIZE THE DATASET 
+# Let's replace 'Attritition' , 'overtime' , 'Over18' column with integers before performing any visualizations 
+employee_df['Attrition'] = employee_df['Attrition'].apply(lambda x: 1 if x == 'Yes' else 0)
+employee_df['OverTime'] = employee_df['OverTime'].apply(lambda x: 1 if x == 'Yes' else 0)
+employee_df['Over18'] = employee_df['Over18'].apply(lambda x: 1 if x == 'Y' else 0)
+
+# View dataframe after changes
+employee_df
+
+# Let's see if we have any missing data. In this case, there is no missing data! 
+sns.heatmap(employee_df.isnull(), yticklabels= False, cbar = False, cmap = "Blues")
+
+# Plot histograms of data 
+# For more information regarding histograms, check this out: https://towardsdatascience.com/histograms-and-density-plots-in-python-f6bda88f5ac0 
+# Several features such as 'MonthlyIncome' and 'TotalWorkingYears' are tail heavy
+# It makes sense to drop 'EmployeeCount' and 'Standardhours' since they do not change from one employee to the other
+employee_df.hist(bins = 30, figsize= (20,20), color = 'b')
+
+# It makes sense to drop 'EmployeeCount' , 'Standardhours' and 'Over18' since they do not change from one employee to the other
+# Let's drop 'EmployeeNumber' as well
+employee_df.drop(['EmployeeCount', 'StandardHours', 'Over18', 'EmployeeNumber'], axis=1, inplace=True)
+
+# View dataframe after changes 
+employee_df
+
+# Let's see how many employees left the company! 
+left_df = employee_df[employee_df['Attrition']  == 1]
+stayed_df = employee_df[employee_df['Attrition']  == 0]
+
+# Count the number of employees who stayed and left
+# Dealing with an imbalanced dataset 
+print('Total = ', len(employee_df))
+print('Number of employees who left = ', len(left_df))
+print('% of employees who left = ', 1.*len(left_df)/len(employee_df) * 100, '%')
+
+print('Number of employees who stayed = ', len(stayed_df))
+print('% of employees who stayed = ', 1.*len(stayed_df)/len(employee_df) * 100, '%')
+
+#  Let's compare the mean and std of the employees who stayed and left 
+# 'age': mean age of the employees who stayed is higher compared to who left
+# 'DailyRate': Rate of employees who stayed is higher
+# 'DistanceFromHome': Employees who stayed live closer to home 
+# 'EnvironmentSatisfaction' & 'JobSatisfaction': Employees who stayed are generally more satisifed with their jobs
+# 'StockOptionLevel': Employees who stayed tend to have higher stock option level
+
+left_df.describe()
+
+stayed_df.describe()
+
+# Visualize correlations between variables 
+# Job level is strongly correlated with total working hours
+# Monthly income is strongly correlated with Job level
+# Monthly income is strongly correlated with total working hours
+# Age is stongly correlated with monthly income
+correlations = employee_df.corr()
+f, ax = plt.subplots(figsize = (20,20))
+sns.heatmap(correlations, annot = True)
+
+# Plot age against employees who stayed (labelled with 0) and employees who left (labelled with 1)
+# For more information regarding count plots, check this out: https://towardsdatascience.com/hands-on-python-data-visualization-seaborn-count-plot-90e823599012
+plt.figure(figsize=[25, 12])
+sns.countplot(x = 'Age', hue = 'Attrition', data = employee_df)
+
+plt.figure(figsize = [20,20])
+plt.subplot(411)
+sns.countplot(x = 'JobRole', hue = 'Attrition', data = employee_df)
+plt.subplot(412)
+sns.countplot(x = 'MaritalStatus', hue = 'Attrition', data = employee_df)
+plt.subplot(413)
+sns.countplot(x = 'JobInvolvement', hue = 'Attrition', data = employee_df)
+plt.subplot(414)
+sns.countplot(x = 'JobLevel', hue = 'Attrition', data = employee_df)
+
+# Single employees tend to leave compared to married and divorced
+# Sales Representitives tend to leave compared to any other job 
+# Less involved employees tend to leave the company 
+# Less experienced (low job level) tend to leave the company 
+
+# KDE (Kernel Density Estimate) is used for visualizing the Probability Density of a continuous variable. 
+# KDE describes the probability density at different values in a continuous variable. 
+# For more information regarding KDE, check this out: https://towardsdatascience.com/histograms-and-density-plots-in-python-f6bda88f5ac0 
+
+plt.figure(figsize = (12,7))
+sns.kdeplot(left_df['DistanceFromHome'], label = 'Employees who left',  shade = True, color = 'r')
+sns.kdeplot(stayed_df['DistanceFromHome'], label = 'Employees who stayed',  shade = True, color = 'b')
+plt.xlabel('Distance From Home')
+
+plt.figure(figsize = (12,7))
+sns.kdeplot(left_df['YearsWithCurrManager'], label = 'Employees who left',  shade = True, color = 'r')
+sns.kdeplot(stayed_df['YearsWithCurrManager'], label = 'Employees who stayed',  shade = True, color = 'b')
+plt.xlabel('Years with Current Manager')
+
+plt.figure(figsize = (12,7))
+sns.kdeplot(left_df['TotalWorkingYears'], label = 'Employees who left',  shade = True, color = 'r')
+sns.kdeplot(stayed_df['TotalWorkingYears'], label = 'Employees who stayed',  shade = True, color = 'b')
+plt.xlabel('Total Working Years')
+
+# Let's see the Gender vs. Monthly Income using box plots 
+# For more information regarding box plots, check this out: https://towardsdatascience.com/understanding-boxplots-5e2df7bcbd51 
+sns.boxplot(x = "MonthlyIncome", y = 'Gender', data = employee_df)
+
+# Let's see Job Role vs. Monthly Income using box plots
+plt.figure(figsize = (15,10))
+sns.boxplot(x = "MonthlyIncome", y = 'JobRole', data = employee_df)
+
+
+# CREATE TESTING AND TRAINING DATA SET & PERFORM DATA CLEANING
+X_cat = employee_df[['BusinessTravel', 'Department', 'EducationField', 'Gender', 'JobRole', 'MaritalStatus']]
+X_cat
+
+# For more information regarding OneHotEncoder, check this out: https://towardsdatascience.com/categorical-encoding-using-label-encoding-and-one-hot-encoder-911ef77fb5bd
+from sklearn.preprocessing import OneHotEncoder
+onehotencoder = OneHotEncoder()
+X_cat = onehotencoder.fit_transform(X_cat).toarray()
+
+# View dataframe after applying one hot encoder
+X_cat
+
+X_cat.shape
+X_cat = pd.DataFrame(X_cat) 
+X_cat
+
+# note that we dropped the target 'Atrittion'
+X_numerical = employee_df[['Age', 'DailyRate', 'DistanceFromHome',	'Education', 'EnvironmentSatisfaction', 'HourlyRate', 'JobInvolvement',	'JobLevel',	'JobSatisfaction',	'MonthlyIncome',	'MonthlyRate',	'NumCompaniesWorked',	'OverTime',	'PercentSalaryHike', 'PerformanceRating',	'RelationshipSatisfaction',	'StockOptionLevel',	'TotalWorkingYears'	,'TrainingTimesLastYear'	, 'WorkLifeBalance',	'YearsAtCompany'	,'YearsInCurrentRole', 'YearsSinceLastPromotion',	'YearsWithCurrManager']]
+
+X_all = pd.concat([X_cat, X_numerical], axis = 1)
+X_all
+
+# Scale information so that the ML model treats all the variables equally
+# For more information regarding MinMaxScaler, check this out: https://towardsdatascience.com/scale-standardize-or-normalize-with-scikit-learn-6ccc7d176a02
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
+X = scaler.fit_transform(X_all)
+
+# View array
+X
+
+y = employee_df['Attrition']
+y
+
+
+# TRAIN & EVALUATE A LOGISTIC REGRESSION CLASSIFIER 
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.25)
+
+X_train.shape
+
+X_test.shape
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+# View y_pred array
+y_pred
+
+from sklearn.metrics import confusion_matrix, classification_report
+print("Accuracy {} %".format( 100 * accuracy_score(y_pred, y_test)))
+
+# Testing Set Performance
+# To learn more about confusion matrices, check this out: https://towardsdatascience.com/understanding-confusion-matrix-a9ad42dcfd62
+cm = confusion_matrix(y_pred, y_test)
+sns.heatmap(cm, annot=True)
+
+print (classification_report(y_test, y_pred))
+
+
+# TRAIN & EVALUTE A RANDOM FOREST CLASSIFIER 
+from sklearn.ensemble import RandomForestClassifier
+model = RandomForestClassifier()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+# Testing Set Performance
+cm = confusion_matrix(y_pred, y_test)
+sns.heatmap(cm, annot=True)
+
+print(classification_report(y_test, y_pred))
+
+
+# TRAIN & EVALUATE A DEEP LEARNING MODEL
+# Use tensorflow (Google's framework to build and train AI models)
+import tensorflow as tf
+
+# Use the keras API to build ANNs and in the background, keras will run tensorflow
+# Build the model in layers or in a sequential way 
+model = tf.keras.models.Sequential()
+
+# Add layers of the ANN specifying number of units, the activation function (i.e. ReLU) and number of samples as the inputs 
+model.add(tf.keras.layers.Dense(units=500, activation= 'relu', input_shape = (50, )))
+model.add(tf.keras.layers.Dense(units= 500, activation= 'relu'))
+model.add(tf.keras.layers.Dense(units= 500, activation= 'relu'))
+
+# Add final/output layer of the ANN using sigmoid activation function (this function will output either 0 or 1 -- needed for a classification problem where the output is not continuous)
+model.add(tf.keras.layers.Dense(units=1, activation='sigmoid'))
+
+# Show the number of parameters to tune 
+model.summary()
+
+# Specify the optimizer, loss, and metrics to train the model 
+model.compile(optimizer='Adam', loss='binary_crossentropy', metrics = ['accuracy'])
+
+# Train model, state number of epochs (number of passes through the entire dataset) and batch/sample size
+epochs_hist = model.fit(X_train, y_train, epochs = 100, batch_size = 50)
+
+# Do predictions
+y_pred = model.predict(X_test)
+# Set the threshold: any value greater than 0.5 belongs to class 1 and any value less than 0.5 belongs to class 0 
+y_pred = (y_pred > 0.5)
+
+# Model will predict true or false for predictions 
+y_pred
+
+epochs_hist.history.keys()
+
+# Visualize training for loss
+plt.plot(epochs_hist.history['loss'])
+plt.title('Model Loss Progress During Training')
+plt.xlabel('Epoch')
+plt.ylabel('Training Loss')
+plt.legend(['Training Loss'])
+
+# Visualize training for accuracy
+plt.plot(epochs_hist.history['accuracy'])
+plt.title('Model Accuracy Progress During Training')
+plt.xlabel('Epoch')
+plt.ylabel('Training Accuracy')
+plt.legend(['Training Accuracy'])
+
+# Confusion Matrix and Heatmap
+# Top-left & bottom-right of the matrix: correctly classified samples, top-right & bottom-left of matrix: incorrectly classified samples
+cm = confusion_matrix(y_test, y_pred)
+sns.heatmap(cm, annot=True)
+
+# Plot classification report
+print(classification_report(y_test, y_pred))
+
+# Now, you have successfully classified whether an employee is going to leave the company or stay with the company using 3 different classifiers! Congrats
+# You can always try to improve the models further by optimizing for them (i.e. optimize the ANN further by trying to increase the sample size of the number of employees who left the company)
